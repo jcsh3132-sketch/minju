@@ -18,7 +18,7 @@ function createGameServer(options = {}) {
     try {url = new URL(req.url, 'http://localhost');} catch {res.writeHead(400);res.end();return;}
     if (url.pathname === '/health' || url.pathname === '/api/play') {
       res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});
-      res.end(JSON.stringify({ok:true,storage:store.rooms?'memory':'redis',version:'3.0.0'}));return;
+      res.end(JSON.stringify({ok:true,storage:store.rooms?'memory':'turso',version:'3.0.0'}));return;
     }
     if (url.pathname === '/connection') {
       const lanHosts = process.env.VERCEL ? [] : Object.values(os.networkInterfaces()).flat()

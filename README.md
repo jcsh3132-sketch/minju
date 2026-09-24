@@ -32,11 +32,11 @@ npm start
 
 ## GitHub / Vercel 배포
 
-Vercel Functions의 WebSocket 지원과 Upstash Redis를 사용합니다. `api/play.js`가 Node HTTP 서버를 내보내며 `/play` 경로로 연결됩니다. 정적 화면은 `npm run build`가 `public/`에 생성합니다. GitHub 연결 후 main 브랜치의 변경은 Vercel에서 배포할 수 있습니다.
+Vercel Functions의 WebSocket 지원과 Turso 데이터베이스를 사용합니다. `api/play.js`가 Node HTTP 서버를 내보내며 `/play` 경로로 연결됩니다. 정적 화면은 `npm run build`가 `public/`에 생성합니다. GitHub 연결 후 main 브랜치의 변경은 Vercel에서 배포할 수 있습니다.
 
-Vercel Marketplace에서 **Upstash for Redis**를 프로젝트에 연결하고 `REDIS_URL` 환경변수를 설정하세요. 무료 요금제를 사용하는 경우 자동 유료 업그레이드를 끄고 무료 사용량 한도 안에서 운영하세요. Redis와 Vercel 함수는 도쿄 리전을 사용합니다. 저장소에는 `.env.local`이나 `.vercel` 인증 정보가 포함되지 않습니다.
+Vercel Marketplace에서 **Turso**를 프로젝트에 연결하면 `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` 환경변수가 설정됩니다. 이 프로젝트는 별도의 게임 전용 데이터베이스와 Starter 무료 요금제를 사용합니다. 데이터베이스와 Vercel 함수는 도쿄 리전을 사용합니다. 저장소에는 `.env.local`이나 `.vercel` 인증 정보가 포함되지 않습니다.
 
-서로 다른 함수 인스턴스가 같은 방을 사용해도 Redis의 잠금과 토큰 검사로 상태를 일관되게 갱신합니다. 연결은 함수 시간 제한 전에 갱신하고, 브라우저 탭에 저장한 재접속 토큰으로 이어갑니다. 빈 방은 삭제하고, 아무 연결도 없는 방은 2분 후 만료됩니다.
+서로 다른 함수 인스턴스가 같은 방을 사용해도 각 버전에 대한 원자적 비교 후 쓰기로 상태를 일관되게 갱신합니다. 연결은 함수 시간 제한 전에 갱신하고, 브라우저 탭에 저장한 재접속 토큰으로 이어갑니다. 빈 방은 삭제하고, 아무 연결도 없는 방은 2분 후 만료됩니다.
 
 ## 조작과 규칙
 
@@ -50,13 +50,13 @@ Vercel Marketplace에서 **Upstash for Redis**를 프로젝트에 연결하고 `
 
 ## 구현 / 검증
 
-`server.js`: 정적 파일 및 WebSocket 연결. `game-hub.js`: 세션과 입장·재접속. `room-store.js`: 메모리 또는 Redis 기반 방 공유. `world.js`: 이동·먹이·충돌. `game.js`: 입력, 모바일 조작, 화면 보간 및 Canvas 렌더링. 외부 이미지·폰트 없이 실행됩니다.
+`server.js`: 정적 파일 및 WebSocket 연결. `game-hub.js`: 세션과 입장·재접속. `room-store.js`: 메모리 또는 Turso 기반 방 공유. `world.js`: 이동·먹이·충돌. `game.js`: 입력, 모바일 조작, 화면 보간 및 Canvas 렌더링. 외부 이미지·폰트 없이 실행됩니다.
 
 ```powershell
 npm test
 npm run build
-# .env.local에 Redis 연결 정보가 있을 때 서버 인스턴스 간 통합 테스트:
-node --env-file-if-exists=.env.local --test tests/redis.test.js
+# .env.local에 Turso 연결 정보가 있을 때 서버 인스턴스 간 통합 테스트:
+node --env-file-if-exists=.env.local --test tests/cloud-store.test.js
 ```
 
 서버 동기화, 방 분리, 성장, 충돌, 재입장과 접속 종료를 검증합니다.

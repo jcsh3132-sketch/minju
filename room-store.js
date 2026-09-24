@@ -59,61 +59,58 @@ class MemoryRoomStore {
   async close() {}
 }
 
-// Every mutation is fenced by its unique lock token, so an expired owner cannot
-// overwrite a newer room. This also keeps separate Vercel instances in sync.
-const LOCK = `
-if redis.call('SET', KEYS[1], ARGV[1], 'NX', 'PX', 3000) then
-  return {redis.call('GET', KEYS[2]) or ''}
-end
-return nil`;
-const COMMIT = `
-if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
-if ARGV[2] == '' then redis.call('DEL', KEYS[2])
-else redis.call('SET', KEYS[2], ARGV[2], 'PX', ARGV[3]) end
-redis.call('DEL', KEYS[1])
-return 1`;
-const RELEASE = `if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0`;
-
-class RedisRoomStore {
-  constructor(url, options = {}) {
-    const Redis = require('ioredis');
-    this.redis = new Redis(url, { lazyConnect: true, connectTimeout: 5000,
-      maxRetriesPerRequest: 1, retryStrategy: n => Math.min(n * 200, 2000) });
-    this.redis.on('error', () => {});
-    this.prefix = options.prefix || 'worm-garden:v3:';
+// Compare-and-swap writes use a fresh UUID, including after a room is recreated.
+// A server can only save the exact version it read, preventing lost updates.
+class TursoRoomStore {
+  constructor(url, authToken, options = {}) {
+    const {createClient} = require('@libsql/client/http');
+    this.client = createClient({url,authToken});
+    this.prefix = options.prefix || 'garden:';
+    this.ready = null; this.lastCleanup = 0;
   }
-  async mutate(code, update, { wait = true } = {}) {
-    const stateKey = this.prefix + code, lockKey = stateKey + ':lock';
-    const deadline = Date.now() + (wait ? 2400 : 0);
+  async initialize() {
+    if (!this.ready) this.ready = this.client.execute(`CREATE TABLE IF NOT EXISTS worm_rooms (
+      id TEXT PRIMARY KEY, etag TEXT NOT NULL, state TEXT NOT NULL, expires_at INTEGER NOT NULL
+    )`).catch(error=>{this.ready=null;throw error;});
+    await this.ready;
+    if(Date.now()-this.lastCleanup>60000){
+      this.lastCleanup=Date.now();
+      await this.client.execute({sql:'DELETE FROM worm_rooms WHERE expires_at < ?',args:[Date.now()]});
+    }
+  }
+  async mutate(code, update, {wait=true}={}) {
+    await this.initialize();
+    const key=this.prefix+code, deadline=Date.now()+(wait?5000:0);
     do {
-      const token = randomUUID();
-      const locked = await this.redis.eval(LOCK, 2, lockKey, stateKey, token);
-      if (locked) {
-        try {
-          const room = deserialize(locked[0]);
-          const result = update(room); room.revision++;
-          const saved = await this.redis.eval(COMMIT, 2, lockKey, stateKey, token,
-            room.world.players.size ? serialize(room) : '', ROOM_TTL_MS);
-          if (saved) return { result, snapshot: packet(room, code) };
-        } catch (error) {
-          await this.redis.eval(RELEASE, 1, lockKey, token).catch(() => {});
-          throw error;
-        }
+      const found=await this.client.execute({sql:'SELECT etag,state,expires_at FROM worm_rooms WHERE id = ?',args:[key]});
+      const previous=found.rows[0];
+      const room=previous&&Number(previous.expires_at)>Date.now()?deserialize(previous.state):freshRoom();
+      const result=update(room);room.revision++;
+      const etag=randomUUID(),state=serialize(room),expiry=Date.now()+ROOM_TTL_MS;
+      let saved;
+      if(!room.world.players.size){
+        if(!previous)return {result,snapshot:packet(room,code)};
+        saved=await this.client.execute({sql:'DELETE FROM worm_rooms WHERE id = ? AND etag = ?',args:[key,previous.etag]});
+      }else if(previous){
+        saved=await this.client.execute({sql:'UPDATE worm_rooms SET etag = ?,state = ?,expires_at = ? WHERE id = ? AND etag = ?',args:[etag,state,expiry,key,previous.etag]});
+      }else{
+        saved=await this.client.execute({sql:'INSERT OR IGNORE INTO worm_rooms (id,etag,state,expires_at) VALUES (?,?,?,?)',args:[key,etag,state,expiry]});
       }
-      if (!wait) return null;
-      await new Promise(resolve => setTimeout(resolve, 25 + Math.random() * 20));
-    } while (Date.now() < deadline);
+      if(saved.rowsAffected===1)return {result,snapshot:packet(room,code)};
+      if(!wait)return null;
+      await new Promise(resolve=>setTimeout(resolve,20+Math.random()*25));
+    }while(Date.now()<deadline);
     throw new Error('정원 연결이 잠시 바빠요. 다시 시도해 주세요.');
   }
-  async advance(code, inputs) {
-    return this.mutate(code, room => advanceRoom(room, Date.now(), inputs), { wait: false });
+  async advance(code,inputs) {
+    return this.mutate(code,room=>advanceRoom(room,Date.now(),inputs),{wait:false});
   }
-  async close() { this.redis.disconnect(); }
+  async close(){this.client.close();}
 }
 function createRoomStore() {
-  const url = process.env.REDIS_URL || process.env.KV_URL;
-  if (url) return new RedisRoomStore(url);
-  if (process.env.VERCEL) throw new Error('REDIS_URL is required for deployed multiplayer.');
+  if(process.env.TURSO_DATABASE_URL&&process.env.TURSO_AUTH_TOKEN)
+    return new TursoRoomStore(process.env.TURSO_DATABASE_URL,process.env.TURSO_AUTH_TOKEN);
+  if(process.env.VERCEL)throw new Error('Turso environment variables are required for deployed multiplayer.');
   return new MemoryRoomStore();
 }
-module.exports = { MemoryRoomStore, RedisRoomStore, createRoomStore, advanceRoom, serialize, deserialize };
+module.exports={MemoryRoomStore,TursoRoomStore,createRoomStore,advanceRoom,serialize,deserialize};
