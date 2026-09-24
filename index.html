@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#152820">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="휴대폰과 PC에서 친구들과 함께 즐기는 실시간 멀티플레이 지렁이 게임">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <title>지렁이 정원 · 함께 자라는 작은 숲</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M12 44Q8 15 30 29T51 17' stroke='%23f49aaf' stroke-width='15' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <a class="brand" href="/" aria-label="지렁이 정원 홈"><svg viewBox="0 0 44 44" aria-hidden="true"><path d="M9 30C3 10 21 9 23 23s17 11 12-9"/><circle cx="34" cy="13" r="2"/></svg><div><span class="eyebrow">WORM GARDEN</span><h1>지렁이 정원</h1></div></a>
+      <div class="connection"><span id="connectionDot" class="dot"></span><span id="connectionText" role="status">정원에 연결 중</span></div>
+    </header>
+    <section class="intro"><div><p class="kicker">작은 지렁이들의 커다란 모험</p><h2>함께 모여, <em>길게 자라요.</em></h2><p>반짝이는 씨앗을 냠냠. 친구들과 정원에서 만나요.</p></div><div class="room-tag">우리의 정원 <strong id="roomLabel">GARDEN</strong><span>최대 12명</span></div></section>
+    <div class="layout">
+      <section class="arena" aria-label="실시간 멀티플레이 게임">
+        <div class="arena-bar"><span><span class="live-dot"></span> <b id="playerCount">0</b>명 함께하는 중</span><span class="arena-caption">THE LITTLE FOREST</span><span>내 점수 <strong id="score">0</strong></span></div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="board" width="1440" height="900" tabindex="0" aria-label="지렁이 게임 화면. 마우스 또는 방향키로 이동하세요."></canvas>
+          <div class="overlay" id="overlay">
+            <form class="join-card" id="joinForm">
+              <span class="badge" id="statusBadge">HELLO, LITTLE WORM</span>
+              <svg class="worm-portrait" viewBox="0 0 180 88" aria-hidden="true"><path d="M25 62C11 23 55 15 67 46S122 89 141 41" stroke="#8e5360" stroke-width="29"/><path d="M25 58C11 19 55 11 67 42S122 85 141 37" stroke="#f3a5b5" stroke-width="26"/><path d="M22 42l20-7m-17-7 17 14m14-17-9 18m22-2-19 9m28 7-19 8m38-2-6 19m31-21 8 17m4-33 19 9" stroke="#d97e94" stroke-width="3"/><ellipse cx="142" cy="32" rx="16" ry="18" fill="#f7b5c2"/><circle cx="136" cy="27" r="5" fill="#fff6e8"/><circle cx="148" cy="27" r="5" fill="#fff6e8"/><circle cx="137" cy="27" r="2.5" fill="#382e35"/><circle cx="149" cy="27" r="2.5" fill="#382e35"/><path d="M138 38q5 5 10-1" stroke="#955167" stroke-width="2"/></svg>
+              <h3 id="overlayTitle">정원에 놀러 오세요</h3><p id="overlayText">나만의 지렁이를 골라 함께 자라볼까요?</p>
+              <div class="form-row"><label>닉네임<input id="nickname" maxlength="14" placeholder="말랑이" autocomplete="off" enterkeyhint="next" value="말랑이"></label><label class="room-field">방 코드<input id="roomInput" maxlength="12" pattern="[A-Za-z0-9-]{3,12}" title="영문, 숫자 또는 - 3~12자" value="GARDEN" required autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"></label></div>
+              <fieldset class="colors"><legend>내 지렁이 색</legend><label><input type="radio" name="color" value="0" checked><span style="--swatch:#f49aaf">분홍</span></label><label><input type="radio" name="color" value="1"><span style="--swatch:#a9a0ed">보라</span></label><label><input type="radio" name="color" value="2"><span style="--swatch:#80cbb8">민트</span></label><label><input type="radio" name="color" value="3"><span style="--swatch:#efc16e">노랑</span></label><label><input type="radio" name="color" value="4"><span style="--swatch:#83b6ef">파랑</span></label><label><input type="radio" name="color" value="5"><span style="--swatch:#ee9b74">주황</span></label></fieldset>
+              <p id="formError" class="form-error" role="alert"></p>
+              <button class="primary" id="startButton" type="submit" disabled>연결 중… <span>↗</span></button>
+              <button class="text-button" id="newRoomButton" type="button">새 방 코드 만들기</button>
+            </form>
+          </div>
+          <div id="spawnNotice" class="spawn-notice hidden">반짝이는 동안은 친구와 부딪혀도 괜찮아요</div>
+          <div id="joystick" class="joystick hidden" role="group" aria-label="이동 조이스틱. 원하는 방향으로 드래그하세요."><span class="joystick-knob" id="joystickKnob"></span><span class="joystick-label">이동</span></div>
+          <button id="boostButton" class="boost-touch hidden" type="button" aria-label="누르는 동안 가속"><span>⚡</span><small>가속</small></button>
+          <div class="mobile-hint" id="mobileHint">왼손으로 이동 · 오른손으로 가속</div>
+        </div>
+        <div class="arena-footer"><span><i class="seed-icon"></i> 씨앗 하나에 +10점</span><div class="energy"><span>⚡ 가속</span><meter id="energy" min="0" max="100" value="100" aria-label="남은 가속 에너지"></meter></div><button id="leaveButton" type="button" disabled>정원 나가기 ↗</button></div>
+      </section>
+      <aside class="sidebar">
+        <section class="panel ranking"><div class="panel-heading"><h3>정원의 친구들</h3><span>LIVE</span></div><p class="panel-subtitle">오늘은 누가 가장 길까요?</p><ol id="leaderboard"><li class="empty-rank">첫 번째 친구가 되어 주세요 🌱</li></ol><div class="personal-best"><span>나의 최고 점수</span><strong id="best">0</strong></div></section>
+        <section class="panel invite"><span class="small-icon">↗</span><h3>친구와 함께라면</h3><p>같은 방 코드로 접속하면<br>하나의 정원에서 만나요.</p><button id="inviteButton" type="button">친구 초대하기 <span>⧉</span></button><p class="invite-note" id="inviteNote">링크를 공유하면 휴대폰에서도 바로 입장할 수 있어요.</p></section>
+        <section class="how-to"><h3>정원 산책 안내</h3><p><span>01</span> 마우스 · 터치 · 방향키로 이동</p><p><span>02</span> Space 또는 ⚡를 눌러 가속</p><p><span>03</span> 벽과 다른 지렁이의 몸은 조심!</p><small>내 몸은 지나갈 수 있어요.<br>멀티플레이 중에는 모두 함께 움직여요.</small></section>
+      </aside>
+    </div>
+    <footer class="page-footer"><span>느긋하게, 가끔은 빠르게. 나만의 속도로 자라요.</span><span>GROW TOGETHER ✳</span></footer>
+    <div id="toast" class="toast hidden" role="status"></div>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>

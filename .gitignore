@@ -1,0 +1,13 @@
+node_modules/
+work/
+*.log
+.vercel/
+.env*
+!.env.example
+dist/
+public/
+coverage/
+
+.vercel
+.env*
+!.env.example
