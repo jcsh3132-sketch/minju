@@ -9,7 +9,7 @@ const { createGameHub } = require('./game-hub');
 function createGameServer(options = {}) {
   const store = options.store || createRoomStore();
   const hub = createGameHub(store);
-  const files = {'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js',
+  const files = {'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/motion.js':'motion.js',
     '/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg','/icon-192.png':'icon-192.png','/icon-512.png':'icon-512.png'};
   const mime = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8',
     '.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png'};

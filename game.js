@@ -13,6 +13,7 @@
   let socket,id=null,joined=false,alive=false,pending=false,ready=false,retry=0;
   let snapshot={players:[],food:[]},rendered=new Map(),heading=null,boost=false,pointer=null;
   const keys=new Set();
+  const motion=new MotionBuffer();
   let joystickPointer=null,joystickAngle=null,wakeLock=null,lastJoin=null;
   let recovery=null;try{recovery=JSON.parse(sessionStorage.getItem('worm-session')||'null');}catch{}
   function saveRecovery(value){recovery=value;try{value?sessionStorage.setItem('worm-session',JSON.stringify(value)):sessionStorage.removeItem('worm-session');}catch{}}
@@ -34,7 +35,7 @@
     $('overlay').classList.remove('hidden');$('boostButton').classList.add('hidden');$('spawnNotice').classList.add('hidden');
     button(joined?'다시 자라기':'정원 들어가기',!ready);boost=false;pointer=null;keys.clear();heading=null;
   }
-  function resetSession(){joined=false;alive=false;pending=false;snapshot={players:[],food:[]};rendered.clear();$('leaveButton').disabled=true;$('score').textContent='0';$('energy').value=100;updateRanking();}
+  function resetSession(){joined=false;alive=false;pending=false;snapshot={players:[],food:[]};rendered.clear();motion.reset();$('leaveButton').disabled=true;$('score').textContent='0';$('energy').value=100;updateRanking();}
   function connect(){
     if(location.protocol==='file:'){
       connection('서버 실행이 필요해요','offline');
@@ -52,14 +53,14 @@
       }else if(data.type==='joined'){
         if(data.id)id=data.id;
         if(data.token)saveRecovery({room:data.room,id,token:data.token});
-        joined=true;alive=true;pending=false;heading=null;pointer=null;keys.clear();boost=false;rendered.clear();
+        joined=true;alive=true;pending=false;heading=null;pointer=null;keys.clear();boost=false;rendered.clear();motion.reset();
         $('overlay').classList.add('hidden');$('boostButton').classList.remove('hidden');$('leaveButton').disabled=false;
         $('roomLabel').textContent=data.room;$('roomInput').value=data.room;
         history.replaceState(null,'',`?room=${encodeURIComponent(data.room)}`);
         canvas.focus({preventScroll:true});
         document.activeElement?.blur();playingMode(true);
       }else if(data.type==='state'){
-        snapshot=data;
+        snapshot=data;motion.push(data,performance.now());
         const me=data.players.find(p=>p.id===id);
         if(me){
           $('score').textContent=me.score;$('energy').value=me.energy;
@@ -242,17 +243,8 @@
   }
   function frame(now){
     const dt=Math.min((now-lastFrame)/1000||.016,.1);lastFrame=now;
-    const alpha=1-Math.exp(-20*dt),time=now/1000;
-    const present=new Set();
-    for(const p of snapshot.players){
-      if(!p.alive)continue;present.add(p.id);
-      let r=rendered.get(p.id);
-      if(!r){r={...p,body:p.body.map(b=>({...b}))};rendered.set(p.id,r);}
-      r.name=p.name;r.color=p.color;r.shield=p.shield;
-      r.angle+=Math.atan2(Math.sin(p.angle-r.angle),Math.cos(p.angle-r.angle))*alpha;
-      r.body=p.body.map((b,i)=>{const old=r.body[i]||b;return{x:old.x+(b.x-old.x)*alpha,y:old.y+(b.y-old.y)*alpha};});
-    }
-    for(const key of rendered.keys())if(!present.has(key))rendered.delete(key);
+    const time=now/1000;
+    rendered=new Map(motion.sample(now).map(p=>[p.id,p]));
     const me=rendered.get(id)?.body[0];
     const viewportW=view.width/view.scale,viewportH=view.height/view.scale;
     const desiredX=Math.max(0,Math.min(W-viewportW,(me?.x??W/2)-viewportW/2));

@@ -35,7 +35,7 @@ function deserialize(raw) {
   return { world, updatedAt: data.updatedAt, revision: data.revision };
 }
 function packet(room, code) {
-  return { ...room.world.snapshot(code), revision: room.revision };
+  return { ...room.world.snapshot(code), revision: room.revision, serverTime: room.updatedAt };
 }
 
 class MemoryRoomStore {
