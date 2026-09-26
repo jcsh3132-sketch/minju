@@ -21,3 +21,12 @@ test('turns interpolate across the angle wrap using the shortest arc',()=>{
   const motion=new MotionBuffer();motion.push(state(1000,100,3.1),0);motion.push(state(1100,110,-3.1),100);
   assert.ok(Math.abs(motion.sample(200)[0].angle-Math.PI)<.001);
 });
+test('a jitter buffer increase slows playback slightly without pausing movement',()=>{
+  const motion=new MotionBuffer();
+  motion.push(state(1000,100),0);motion.push(state(1100,110),100);
+  motion.sample(230);
+  motion.push(state(1200,120),246);
+  const before=motion.cursor;motion.sample(246);
+  assert.ok(motion.cursor-before>=16*.85);
+  assert.ok(motion.cursor-before<=16*1.15);
+});

@@ -2,7 +2,7 @@
 (function(root){
   class MotionBuffer {
     constructor(){this.reset();}
-    reset(){this.frames=[];this.offset=null;this.delay=150;this.cursor=null;}
+    reset(){this.frames=[];this.offset=null;this.delay=150;this.cursor=null;this.lastSample=null;}
     push(state,now){
       const time=state.serverTime??state.tick*1000/30;
       const last=this.frames.at(-1);
@@ -19,8 +19,11 @@
     }
     sample(now){
       if(!this.frames.length)return [];
-      // Never rewind when the jitter buffer grows.
-      this.cursor=Math.max(this.cursor??-Infinity,now-this.offset-this.delay);
+      // Adjust playback speed gently: growing the buffer must not freeze a frame.
+      const desired=now-this.offset-this.delay,elapsed=now-(this.lastSample??now);
+      if(this.cursor===null||elapsed>250)this.cursor=Math.max(this.cursor??-Infinity,desired);
+      else this.cursor+=elapsed*Math.max(.85,Math.min(1.15,1+(desired-this.cursor-elapsed)/500));
+      this.lastSample=now;
       while(this.frames.length>2&&this.frames[1].time<=this.cursor)this.frames.shift();
       const a=this.frames[0],b=this.frames[1]||a;
       const span=b.time-a.time;

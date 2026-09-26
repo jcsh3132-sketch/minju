@@ -37,3 +37,23 @@
   .joystick-knob{left:22px;top:22px}
   .boost-touch{width:66px;height:66px;bottom:26px}
 }
+/* Clear mobile HUD, with controls kept below the player's focal area. */
+@media (pointer:coarse),(max-width:999px){
+  body.playing .arena-bar{background:#142c24;font-size:12px;flex-basis:52px}
+  body.playing .arena-bar strong{font-size:25px;color:#ffe4a0}
+  body.playing .arena-footer{background:#142c24;font-size:11px;min-height:48px}
+  body.playing .arena-footer>span{font-size:11px;color:#f1dfa8}
+  body.playing .energy{font-size:11px}
+  body.playing meter{width:62px;height:10px}
+  body.playing #leaveButton{font-size:11px;min-width:78px}
+  .joystick{background:#142c2440;border-color:#e8f1c880;bottom:32px}
+  .joystick-knob{background:#e6eeb6de}
+  .boost-touch{background:#f0e5a6e6;border-color:#fff4cd;box-shadow:0 4px 18px #10261d55}
+  body.playing .mobile-hint{font-size:10px;color:#e7edd0}
+  .spawn-notice{top:86px;font-size:10px;max-width:95%;white-space:normal;text-align:center}
+}
+@media (max-height:500px) and (orientation:landscape){
+  body.playing .arena-bar{flex-basis:36px;padding:3px 14px}
+  body.playing .arena-footer{min-height:34px;padding-top:0;padding-bottom:env(safe-area-inset-bottom)}
+  body.playing .arena-bar strong{font-size:20px}
+}

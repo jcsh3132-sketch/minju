@@ -62,7 +62,7 @@ class World {
     for(const p of alive) {
       if(!p.alive) continue;
       for(let i=this.food.length-1;i>=0;i--) {
-        if(Math.hypot(p.body[0].x-this.food[i].x,p.body[0].y-this.food[i].y)<RADIUS+7) {
+        if(Math.hypot(p.body[0].x-this.food[i].x,p.body[0].y-this.food[i].y)<RADIUS+11) {
           p.score+=10;p.length=Math.min(180,p.length+3);this.food.splice(i,1);
           while(p.body.length<p.length)p.body.push({...p.body.at(-1)});
         }
