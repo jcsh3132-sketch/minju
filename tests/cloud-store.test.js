@@ -27,18 +27,20 @@ test('separate server instances share rooms and reconnect state through Turso', 
   }
   const a=client(first),b=client(second);
   await Promise.all([a,b].map(c=>c.wait(d=>d.type==='hello')));
-  a.send({type:'join',room:'CLOUD',name:'First instance'});b.send({type:'join',room:'CLOUD',name:'Second instance'});
+  a.send({type:'match',name:'First instance'});b.send({type:'match',name:'Second instance'});
   const [joined]=await Promise.all([a,b].map(c=>c.wait(d=>d.type==='joined')));
+  assert.equal(joined.room,'GARDEN');
+  assert.deepEqual(await secondStore.publicRooms(),['GARDEN']);
   const [stateA,stateB]=await Promise.all([a,b].map(c=>c.wait(d=>d.type==='state'&&d.players.length===2)));
   assert.deepEqual(new Set(stateA.players.map(p=>p.id)),new Set(stateB.players.map(p=>p.id)));
   assert.equal(JSON.stringify(stateA).includes(joined.token),false);
   // The first server goes away, and its player resumes on the second instance.
   a.socket.close();await new Promise(resolve=>a.socket.once('close',resolve));
   const resumed=client(second);await resumed.wait(d=>d.type==='hello');
-  resumed.send({type:'resume',room:'CLOUD',id:joined.id,token:joined.token});
+  resumed.send({type:'resume',room:'GARDEN',id:joined.id,token:joined.token});
   const ack=await resumed.wait(d=>d.type==='joined');assert.equal(ack.id,joined.id);
   const shared=await resumed.wait(d=>d.type==='state'&&d.players.length===2);assert.ok(shared.tick>=stateA.tick);
   await Promise.all([resumed,b].map(async c=>{c.send({type:'leave'});await c.wait(d=>d.type==='left');}));
-  const remaining=await firstStore.client.execute({sql:'SELECT id FROM worm_rooms WHERE id = ?',args:[prefix+'CLOUD']});
+  const remaining=await firstStore.client.execute({sql:'SELECT id FROM worm_rooms WHERE id = ?',args:[prefix+'GARDEN']});
   assert.equal(remaining.rows.length,0);
 });

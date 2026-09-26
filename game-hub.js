@@ -41,7 +41,7 @@ function createGameHub(store) {
       advanceRoom(room, Date.now(), []);
       const current = room.world.players.get(ws.id);
       if (current?.alive) return { token: current.token, id: ws.id };
-      if (room.world.players.size >= 12 && !current) throw new Error('방이 가득 찼어요. 다른 방 코드를 입력해 주세요.');
+      if (room.world.players.size >= 12 && !current) throw Object.assign(new Error('방이 가득 찼어요. 다른 방 코드를 입력해 주세요.'),{code:'ROOM_FULL'});
       const p = room.world.spawn(ws.id, name || '말랑이', Number.isInteger(data.color) ? data.color : 0);
       p.token = token; p.connection = ws.connectionId; p.lastSeen = Date.now();
       return { token, id: ws.id };
@@ -49,6 +49,17 @@ function createGameHub(store) {
     if (ws.readyState !== WebSocket.OPEN) return;
     ws.room = code; ws.revision = -1; ws.input = null;
     send(ws, { type: 'joined', room: code, ...updated.result }); sendState(ws, updated.snapshot);
+  }
+  async function match(ws,data){
+    // Every instance uses the same candidate order; atomic joins enforce capacity.
+    const occupied=await store.publicRooms();
+    const candidates=[...new Set([...(ws.room?[ws.room]:[]),...occupied,'GARDEN',
+      ...Array.from({length:99},(_,i)=>'PUBLIC-'+(i+2))])];
+    for(const room of candidates){
+      try{await join(ws,{...data,room});return;}
+      catch(error){if(error.code!=='ROOM_FULL')throw error;}
+    }
+    throw new Error('모든 정원이 가득 찼어요. 잠시 후 다시 참여해 주세요.');
   }
   async function resume(ws, data) {
     if (!validRoom(data.room) || typeof data.id !== 'string') throw Object.assign(new Error('이전 산책이 끝났어요. 다시 입장해 주세요.'), {code:'RESUME_EXPIRED'});
@@ -106,10 +117,11 @@ function createGameHub(store) {
         if(typeof data.angle==='number'&&Number.isFinite(data.angle))ws.input={angle:data.angle,boost:data.boost===true};
         return;
       }
-      if(!['join','resume','leave'].includes(data.type))return;
+      if(!['join','match','resume','leave'].includes(data.type))return;
       ws.queue=ws.queue.then(async()=>{
         if(ws.readyState!==WebSocket.OPEN)return;
         if(data.type==='join')await join(ws,data);
+        else if(data.type==='match')await match(ws,data);
         else if(data.type==='resume')await resume(ws,data);
         else{await leave(ws);send(ws,{type:'left'});}
       }).catch(error=>report(ws,error));

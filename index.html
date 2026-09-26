@@ -29,12 +29,12 @@
             <form class="join-card" id="joinForm">
               <span class="badge" id="statusBadge">HELLO, LITTLE WORM</span>
               <svg class="worm-portrait" viewBox="0 0 180 88" aria-hidden="true"><path d="M25 62C11 23 55 15 67 46S122 89 141 41" stroke="#8e5360" stroke-width="29"/><path d="M25 58C11 19 55 11 67 42S122 85 141 37" stroke="#f3a5b5" stroke-width="26"/><path d="M22 42l20-7m-17-7 17 14m14-17-9 18m22-2-19 9m28 7-19 8m38-2-6 19m31-21 8 17m4-33 19 9" stroke="#d97e94" stroke-width="3"/><ellipse cx="142" cy="32" rx="16" ry="18" fill="#f7b5c2"/><circle cx="136" cy="27" r="5" fill="#fff6e8"/><circle cx="148" cy="27" r="5" fill="#fff6e8"/><circle cx="137" cy="27" r="2.5" fill="#382e35"/><circle cx="149" cy="27" r="2.5" fill="#382e35"/><path d="M138 38q5 5 10-1" stroke="#955167" stroke-width="2"/></svg>
-              <h3 id="overlayTitle">정원에 놀러 오세요</h3><p id="overlayText">나만의 지렁이를 골라 함께 자라볼까요?</p>
-              <div class="form-row"><label>닉네임<input id="nickname" maxlength="14" placeholder="말랑이" autocomplete="off" enterkeyhint="next" value="말랑이"></label><label class="room-field">방 코드<input id="roomInput" maxlength="12" pattern="[A-Za-z0-9-]{3,12}" title="영문, 숫자 또는 - 3~12자" value="GARDEN" required autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"></label></div>
+              <h3 id="overlayTitle">정원에 놀러 오세요</h3><p id="overlayText">플레이를 누르면 친구들이 있는 정원에 자동으로 합류해요.</p>
+              <div class="form-row"><label>닉네임<input id="nickname" maxlength="14" placeholder="말랑이" autocomplete="off" enterkeyhint="next" value="말랑이"></label><label class="room-field hidden">방 코드<input id="roomInput" maxlength="12" pattern="[A-Za-z0-9-]{3,12}" title="영문, 숫자 또는 - 3~12자" value="GARDEN" required autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"></label></div>
               <fieldset class="colors"><legend>내 지렁이 색</legend><label><input type="radio" name="color" value="0" checked><span style="--swatch:#f49aaf">분홍</span></label><label><input type="radio" name="color" value="1"><span style="--swatch:#a9a0ed">보라</span></label><label><input type="radio" name="color" value="2"><span style="--swatch:#80cbb8">민트</span></label><label><input type="radio" name="color" value="3"><span style="--swatch:#efc16e">노랑</span></label><label><input type="radio" name="color" value="4"><span style="--swatch:#83b6ef">파랑</span></label><label><input type="radio" name="color" value="5"><span style="--swatch:#ee9b74">주황</span></label></fieldset>
               <p id="formError" class="form-error" role="alert"></p>
               <button class="primary" id="startButton" type="submit" disabled>연결 중… <span>↗</span></button>
-              <button class="text-button" id="newRoomButton" type="button">새 방 코드 만들기</button>
+              <button class="text-button" id="newRoomButton" type="button" hidden>새 방 코드 만들기</button>
             </form>
           </div>
           <div id="spawnNotice" class="spawn-notice hidden">반짝이는 동안은 친구와 부딪혀도 괜찮아요</div>
@@ -46,7 +46,7 @@
       </section>
       <aside class="sidebar">
         <section class="panel ranking"><div class="panel-heading"><h3>정원의 친구들</h3><span>LIVE</span></div><p class="panel-subtitle">오늘은 누가 가장 길까요?</p><ol id="leaderboard"><li class="empty-rank">첫 번째 친구가 되어 주세요 🌱</li></ol><div class="personal-best"><span>나의 최고 점수</span><strong id="best">0</strong></div></section>
-        <section class="panel invite"><span class="small-icon">↗</span><h3>친구와 함께라면</h3><p>같은 방 코드로 접속하면<br>하나의 정원에서 만나요.</p><button id="inviteButton" type="button">친구 초대하기 <span>⧉</span></button><p class="invite-note" id="inviteNote">링크를 공유하면 휴대폰에서도 바로 입장할 수 있어요.</p></section>
+        <section class="panel invite"><span class="small-icon">↗</span><h3>친구와 함께라면</h3><p>주소만 알면 누구나 참여해요.<br>빈자리가 있는 정원으로 자동 입장!</p><button id="inviteButton" type="button">사이트 공유하기 <span>⧉</span></button><p class="invite-note" id="inviteNote">방 코드 없이 바로 플레이하세요. 정원당 최대 12명이 함께해요.</p></section>
         <section class="how-to"><h3>정원 산책 안내</h3><p><span>01</span> 마우스 · 터치 · 방향키로 이동</p><p><span>02</span> Space 또는 ⚡를 눌러 가속</p><p><span>03</span> 벽과 다른 지렁이의 몸은 조심!</p><small>내 몸은 지나갈 수 있어요.<br>멀티플레이 중에는 모두 함께 움직여요.</small></section>
       </aside>
     </div>

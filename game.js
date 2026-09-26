@@ -31,11 +31,11 @@
   function send(data){if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify(data));}
   function button(text,disabled=false){$('startButton').textContent=text+' ↗';$('startButton').disabled=disabled;}
   function connection(text,state){$('connectionText').textContent=text;$('connectionDot').className='dot '+state;}
-  function showLobby(title='정원에 놀러 오세요',description='나만의 지렁이를 골라 함께 자라볼까요?',badge='HELLO, LITTLE WORM'){
+  function showLobby(title='정원에 놀러 오세요',description='플레이를 누르면 친구들이 있는 정원에 자동으로 합류해요.',badge='HELLO, LITTLE WORM'){
     playingMode(false);
     $('overlayTitle').textContent=title;$('overlayText').textContent=description;$('statusBadge').textContent=badge;
     $('overlay').classList.remove('hidden');$('boostButton').classList.add('hidden');$('spawnNotice').classList.add('hidden');
-    button(joined?'다시 자라기':'정원 들어가기',!ready);boost=false;pointer=null;keys.clear();heading=null;
+    button(joined?'다시 자라기':'바로 플레이',!ready);boost=false;pointer=null;keys.clear();heading=null;
   }
   function resetSession(){joined=false;alive=false;pending=false;snapshot={players:[],food:[]};rendered.clear();motion.reset();cameraReady=false;previousScore=0;pickups.length=0;$('leaveButton').disabled=true;$('score').textContent='0';$('energy').value=100;updateRanking();}
   function connect(){
@@ -49,7 +49,7 @@
     socket.addEventListener('message',event=>{
       let data;try{data=JSON.parse(event.data);}catch{return;}
       if(data.type==='hello'){
-        id=data.id;ready=true;retry=0;connection('정원에 연결됨','online');button('정원 들어가기');
+        id=data.id;ready=true;retry=0;connection('정원에 연결됨','online');button('바로 플레이');
         $('formError').textContent='';
         if(recovery){pending=true;button('이전 산책 이어가는 중…',true);send({type:'resume',...recovery});}
       }else if(data.type==='joined'){
@@ -76,7 +76,7 @@
         updateRanking();
       }else if(data.type==='error'){
         if(data.code==='RESUME_EXPIRED')saveRecovery(null);
-        pending=false;$('formError').textContent=data.message;button(joined?'다시 자라기':'정원 들어가기',!ready);
+        pending=false;$('formError').textContent=data.message;button(joined?'다시 자라기':'바로 플레이',!ready);
       }else if(data.type==='left'){saveRecovery(null);resetSession();showLobby();}
     });
     socket.addEventListener('close',()=>{
@@ -105,11 +105,9 @@
   }
   $('joinForm').addEventListener('submit',event=>{
     event.preventDefault();if(!ready||pending)return;
-    const room=$('roomInput').value.trim().toUpperCase();
-    if(!/^[A-Z0-9-]{3,12}$/.test(room)){$('formError').textContent='방 코드는 영문·숫자 3~12자로 입력해 주세요.';return;}
-    pending=true;$('formError').textContent='';button('정원에 들어가는 중…',true);
+    pending=true;$('formError').textContent='';button('함께할 정원 찾는 중…',true);
     storage.set('worm-garden-name',$('nickname').value);
-    lastJoin={type:'join',room,name:$('nickname').value,color:Number(document.querySelector('input[name="color"]:checked').value)};
+    lastJoin={type:'match',name:$('nickname').value,color:Number(document.querySelector('input[name="color"]:checked').value)};
     send(lastJoin);
   });
   $('roomInput').addEventListener('input',()=>{if(!joined)$('roomLabel').textContent=$('roomInput').value.toUpperCase();});
@@ -122,11 +120,9 @@
   function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').classList.remove('hidden');toastTimer=setTimeout(()=>$('toast').classList.add('hidden'),4000);}
   $('inviteButton').addEventListener('click',async()=>{
     if(location.protocol==='file:'){toast('서버를 실행한 뒤 초대 링크를 만들 수 있어요.');return;}
-    const room=joined?$('roomLabel').textContent:$('roomInput').value.toUpperCase();
-    if(!/^[A-Z0-9-]{3,12}$/.test(room)){toast('방 코드를 먼저 입력해 주세요.');return;}
-    const url=new URL(shareBase);url.searchParams.set('room',room);
+    const url=new URL(shareBase);
     if(navigator.share&&matchMedia('(pointer:coarse)').matches){
-      try{await navigator.share({title:'지렁이 정원',text:`${room} 정원에서 같이 놀아요!`,url:url.href});return;}
+      try{await navigator.share({title:'지렁이 정원',text:'지렁이 정원에서 같이 놀아요!',url:url.href});return;}
       catch(error){if(error.name==='AbortError')return;}
     }
     try{

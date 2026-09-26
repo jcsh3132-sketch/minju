@@ -68,3 +68,19 @@ test('reconnection restores the same player only with the secret resume token',a
   const state=await next.next(d=>d.type==='state');assert.equal(state.players[0].score,90);
   assert.equal(JSON.stringify(state).includes(joined.token),false);
 });
+
+test('public matchmaking fills rooms, overflows safely and prefers active rooms',async t=>{
+  const app=createGameServer();await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));t.after(()=>app.close());
+  const url=`ws://127.0.0.1:${app.server.address().port}/play`;
+  const people=Array.from({length:13},()=>client(url));
+  await Promise.all(people.map(p=>p.next(d=>d.type==='hello')));
+  people.forEach((p,i)=>p.send({type:'match',name:'Guest'+i}));
+  const joins=await Promise.all(people.map(p=>p.next(d=>d.type==='joined')));
+  assert.equal(joins.filter(p=>p.room==='GARDEN').length,12);
+  assert.equal(joins.filter(p=>p.room==='PUBLIC-2').length,1);
+  const extra=client(url);await extra.next(d=>d.type==='hello');extra.send({type:'match'});
+  assert.equal((await extra.next(d=>d.type==='joined')).room,'PUBLIC-2');
+  const publicPlayer=joins.findIndex(p=>p.room==='PUBLIC-2');
+  people[publicPlayer].send({type:'match'});
+  assert.equal((await people[publicPlayer].next(d=>d.type==='joined')).room,'PUBLIC-2');
+});

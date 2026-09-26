@@ -38,6 +38,13 @@ function packet(room, code) {
   return { ...room.world.snapshot(code), revision: room.revision, serverTime: room.updatedAt };
 }
 
+function publicCandidates(entries){
+  return entries.filter(([code])=>code==='GARDEN'||/^PUBLIC-\d+$/.test(code))
+    .map(([code,room])=>[code,[...room.world.players.values()].filter(p=>Date.now()-p.lastSeen<=PLAYER_GRACE_MS).length])
+    .filter(([,count])=>count>0&&count<12)
+    .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).map(([code])=>code);
+}
+
 class MemoryRoomStore {
   constructor() { this.rooms = new Map(); }
   async mutate(code, update) {
@@ -56,6 +63,7 @@ class MemoryRoomStore {
   async advance(code, inputs) {
     return this.mutate(code, room => advanceRoom(room, Date.now(), inputs));
   }
+  async publicRooms(){return publicCandidates([...this.rooms]);}
   async close() {}
 }
 
@@ -104,6 +112,12 @@ class TursoRoomStore {
   }
   async advance(code,inputs) {
     return this.mutate(code,room=>advanceRoom(room,Date.now(),inputs),{wait:false});
+  }
+  async publicRooms(){
+    await this.initialize();
+    const rows=await this.client.execute({sql:'SELECT id,state FROM worm_rooms WHERE expires_at > ? AND (id = ? OR id LIKE ?)',
+      args:[Date.now(),this.prefix+'GARDEN',this.prefix+'PUBLIC-%']});
+    return publicCandidates(rows.rows.map(row=>[row.id.slice(this.prefix.length),deserialize(row.state)]));
   }
   async close(){this.client.close();}
 }
