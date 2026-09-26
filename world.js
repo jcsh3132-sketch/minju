@@ -18,7 +18,7 @@ class World {
     }
     const angle=Math.atan2(HEIGHT/2-y,WIDTH/2-x);
     const player={id,name,color:COLORS[color]||COLORS[0],alive:true,score:0,angle,target:angle,
-      boosting:false,energy:100,shield:3,length:27,
+      boosting:false,energy:100,shield:5,length:27,
       body:Array.from({length:27},(_,i)=>({x:x-Math.cos(angle)*i*SPACING,y:y-Math.sin(angle)*i*SPACING}))};
     this.players.set(id,player); return player;
   }
@@ -33,10 +33,10 @@ class World {
     for(const p of alive) {
       p.shield=Math.max(0,p.shield-dt);
       const delta=Math.atan2(Math.sin(p.target-p.angle),Math.cos(p.target-p.angle));
-      p.angle+=Math.max(-3.9*dt,Math.min(3.9*dt,delta));
+      p.angle+=Math.max(-4.5*dt,Math.min(4.5*dt,delta));
       const boost=p.boosting && p.energy>=2;
       p.energy=Math.max(0,Math.min(100,p.energy+(boost?-35:20)*dt));
-      const speed=boost?205:118;
+      const speed=boost?180:100;
       p.body[0]={x:p.body[0].x+Math.cos(p.angle)*speed*dt,y:p.body[0].y+Math.sin(p.angle)*speed*dt};
       for(let i=1;i<p.body.length;i++) {
         const a=p.body[i-1],b=p.body[i],distance=Math.hypot(a.x-b.x,a.y-b.y);
@@ -63,7 +63,7 @@ class World {
       if(!p.alive) continue;
       for(let i=this.food.length-1;i>=0;i--) {
         if(Math.hypot(p.body[0].x-this.food[i].x,p.body[0].y-this.food[i].y)<RADIUS+11) {
-          p.score+=10;p.length=Math.min(180,p.length+3);this.food.splice(i,1);
+          p.score+=10;p.length=Math.min(180,p.length+1);this.food.splice(i,1);
           while(p.body.length<p.length)p.body.push({...p.body.at(-1)});
         }
       }

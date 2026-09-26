@@ -7,7 +7,7 @@ function place(p,x,y,angle=0){p.angle=angle;p.target=angle;p.body=Array.from({le
 test('food grows a worm and updates its authoritative score',()=>{
   const w=world(),p=w.spawn('a','Alice');place(p,400,400);
   w.food=[{id:1,x:404,y:400,color:0}];w.step(1/30);
-  assert.equal(p.score,10);assert.equal(p.body.length,30);assert.equal(w.food.length,130);
+  assert.equal(p.score,10);assert.equal(p.body.length,28);assert.equal(w.food.length,130);
   assert.ok(p.body[0].x>400);assert.equal(w.snapshot('TEST').players[0].score,10);
 });
 test('wall collision kills even during spawn protection and leaves seeds',()=>{
@@ -30,6 +30,20 @@ test('invalid input is ignored and boost consumes regenerating energy',()=>{
   const w=world(),p=w.spawn('p','Player');place(p,400,400);w.food=[];
   w.input('p',NaN,true);assert.equal(p.boosting,false);assert.equal(p.target,0);
   w.input('p',Infinity,true);assert.equal(p.target,0);
-  w.input('p',0,true);w.step(1/30);assert.ok(p.body[0].x-400>6);assert.ok(p.energy<100);
+  w.input('p',0,true);w.step(1/30);assert.ok(p.body[0].x-400>=6);assert.ok(p.energy<100);
   const energy=p.energy;w.input('p',0,false);w.step(1/30);assert.ok(p.energy>energy);
+});
+
+test('ten fruits give full points but only ten extra body segments',()=>{
+  const w=world(),p=w.spawn('a','Alice');place(p,400,400);
+  w.food=Array.from({length:10},(_,i)=>({id:i+1,x:403,y:400,color:0}));
+  w.step(1/30);
+  assert.equal(p.score,100);assert.equal(p.length,37);assert.equal(p.body.length,37);
+});
+test('normal travel is slower and reversing direction allows a tighter turn',()=>{
+  const w=world(),p=w.spawn('a','Alice');place(p,400,400);w.food=[];
+  w.step(1/30);assert.ok(Math.abs(p.body[0].x-400-100/30)<1e-8);
+  w.input('a',Math.PI,false);w.step(1/30);
+  assert.ok(Math.abs(p.angle-4.5/30)<1e-8);
+  assert.ok(p.shield>4.9);
 });
